@@ -251,6 +251,34 @@ public final class SqliteEconomyStorage implements EconomyStorage {
     }
 
     @Override
+    public synchronized List<Transaction> recentTransactions(AccountId accountId, Currency currency, int limit) {
+        String sql = """
+            SELECT id, source_account_id, target_account_id, currency_key, amount_minor_units,
+                   reason, status, actor, message, created_at
+            FROM transactions
+            WHERE currency_key = ? AND (source_account_id = ? OR target_account_id = ?)
+            ORDER BY created_at DESC
+            LIMIT ?
+            """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, currency.key());
+            statement.setString(2, accountId.value());
+            statement.setString(3, accountId.value());
+            statement.setInt(4, Math.max(1, limit));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Transaction> transactions = new ArrayList<>();
+                while (resultSet.next()) {
+                    transactions.add(transactionFromResultSet(resultSet, currency));
+                }
+                return transactions;
+            }
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to read recent transactions", exception);
+        }
+    }
+
+    @Override
     public synchronized void close() {
         if (connection == null) {
             return;
@@ -307,6 +335,8 @@ public final class SqliteEconomyStorage implements EconomyStorage {
             statement.execute("CREATE INDEX IF NOT EXISTS idx_balances_top ON balances(currency_key, minor_units DESC)");
             statement.execute("CREATE INDEX IF NOT EXISTS idx_accounts_owner_uuid ON accounts(owner_uuid)");
             statement.execute("CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at)");
+            statement.execute("CREATE INDEX IF NOT EXISTS idx_transactions_source_created_at ON transactions(source_account_id, created_at DESC)");
+            statement.execute("CREATE INDEX IF NOT EXISTS idx_transactions_target_created_at ON transactions(target_account_id, created_at DESC)");
         }
     }
 
@@ -351,6 +381,24 @@ public final class SqliteEconomyStorage implements EconomyStorage {
             resultSet.getString("display_name"),
             Instant.ofEpochMilli(resultSet.getLong("created_at")),
             Instant.ofEpochMilli(resultSet.getLong("updated_at"))
+        );
+    }
+
+    private Transaction transactionFromResultSet(ResultSet resultSet, Currency currency) throws SQLException {
+        String source = resultSet.getString("source_account_id");
+        String target = resultSet.getString("target_account_id");
+        return new Transaction(
+            UUID.fromString(resultSet.getString("id")),
+            source == null ? null : new AccountId(source),
+            target == null ? null : new AccountId(target),
+            Money.ofMinor(resultSet.getLong("amount_minor_units"), currency),
+            new TransactionReason(
+                resultSet.getString("reason"),
+                resultSet.getString("message"),
+                resultSet.getString("actor")
+            ),
+            Instant.ofEpochMilli(resultSet.getLong("created_at")),
+            TransactionStatus.valueOf(resultSet.getString("status"))
         );
     }
 

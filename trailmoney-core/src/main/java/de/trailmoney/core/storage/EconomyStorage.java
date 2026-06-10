@@ -30,6 +30,8 @@ public interface EconomyStorage extends AutoCloseable {
 
     List<BalanceEntry> topBalances(Currency currency, int limit);
 
+    List<Transaction> recentTransactions(AccountId accountId, Currency currency, int limit);
+
     @Override
     void close();
 }

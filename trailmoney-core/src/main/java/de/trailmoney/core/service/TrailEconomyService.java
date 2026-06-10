@@ -175,6 +175,16 @@ public final class TrailEconomyService implements EconomyService {
         return supplyAsync(() -> storage.topBalances(currency, limit));
     }
 
+    @Override
+    public List<Transaction> recentTransactions(AccountId accountId, Currency currency, int limit) {
+        return storage.recentTransactions(accountId, currency, limit);
+    }
+
+    @Override
+    public CompletionStage<List<Transaction>> recentTransactionsAsync(AccountId accountId, Currency currency, int limit) {
+        return supplyAsync(() -> storage.recentTransactions(accountId, currency, limit));
+    }
+
     private TransactionResult executeMoneyMutation(Transaction transaction, Money amount, Supplier<StorageMutationResult> operation) {
         if (!amount.isPositive()) {
             return TransactionResult.failure(TransactionResultCode.INVALID_AMOUNT, transaction.withStatus(TransactionStatus.FAILED), "Amount must be positive");

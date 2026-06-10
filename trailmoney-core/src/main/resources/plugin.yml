@@ -50,6 +50,9 @@ permissions:
   trailmoney.eco.top:
     description: Allows viewing top balances.
     default: op
+  trailmoney.eco.history:
+    description: Allows viewing recent account transactions.
+    default: op
   trailmoney.admin:
     description: Grants all TrailMoney admin permissions.
     default: op
@@ -62,3 +65,4 @@ permissions:
       trailmoney.eco.set: true
       trailmoney.eco.reload: true
       trailmoney.eco.top: true
+      trailmoney.eco.history: true

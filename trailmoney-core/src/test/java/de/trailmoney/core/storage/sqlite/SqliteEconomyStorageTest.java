@@ -7,6 +7,7 @@ import de.trailmoney.api.money.Money;
 import de.trailmoney.api.transaction.Transaction;
 import de.trailmoney.api.transaction.TransactionReason;
 import de.trailmoney.api.transaction.TransactionResultCode;
+import de.trailmoney.api.transaction.TransactionStatus;
 import de.trailmoney.core.storage.AccountCreationResult;
 import de.trailmoney.core.storage.StorageMutationResult;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -195,6 +197,35 @@ class SqliteEconomyStorageTest {
     }
 
     @Test
+    void recentTransactionsReturnsAccountTransactionsInDescendingTimeOrder() {
+        try (SqliteEconomyStorage storage = open(tempDir.resolve("trailmoney.db"))) {
+            Account account = createPlayer(storage, "History", ZERO);
+
+            storage.deposit(
+                account.id(),
+                Money.ofMinor(100, COINS),
+                MIN_BALANCE,
+                null,
+                transactionAt(null, account.id(), 100, "older_deposit", "2026-06-11T00:00:00Z")
+            );
+            storage.withdraw(
+                account.id(),
+                Money.ofMinor(25, COINS),
+                MIN_BALANCE,
+                transactionAt(account.id(), null, 25, "newer_withdraw", "2026-06-11T00:00:01Z")
+            );
+
+            List<Transaction> history = storage.recentTransactions(account.id(), COINS, 10);
+
+            assertEquals(List.of("newer_withdraw", "older_deposit"), history.stream()
+                .map(transaction -> transaction.reason().key())
+                .toList());
+            assertEquals(TransactionStatus.SUCCESS, history.getFirst().status());
+            assertEquals(1, storage.recentTransactions(account.id(), COINS, 1).size());
+        }
+    }
+
+    @Test
     void existingAccountIsReturnedAndDisplayNameIsUpdated() {
         UUID playerUuid = UUID.randomUUID();
 
@@ -220,6 +251,18 @@ class SqliteEconomyStorageTest {
 
     private Transaction transaction(AccountId source, AccountId target, long amount, String reason) {
         return Transaction.pending(source, target, Money.ofMinor(amount, COINS), TransactionReason.system(reason));
+    }
+
+    private Transaction transactionAt(AccountId source, AccountId target, long amount, String reason, String timestamp) {
+        return new Transaction(
+            UUID.randomUUID(),
+            source,
+            target,
+            Money.ofMinor(amount, COINS),
+            TransactionReason.system(reason),
+            Instant.parse(timestamp),
+            TransactionStatus.PENDING
+        );
     }
 
     private long countTransactions(Path database, String reason, String status) {

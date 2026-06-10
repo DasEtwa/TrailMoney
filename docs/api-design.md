@@ -59,6 +59,9 @@ CompletionStage<TransactionResult> setBalanceAsync(AccountId accountId, Money am
 
 List<BalanceEntry> topBalances(Currency currency, int limit);
 CompletionStage<List<BalanceEntry>> topBalancesAsync(Currency currency, int limit);
+
+List<Transaction> recentTransactions(AccountId accountId, Currency currency, int limit);
+CompletionStage<List<Transaction>> recentTransactionsAsync(AccountId accountId, Currency currency, int limit);
 ```
 
 Async ist der bevorzugte Integrationspfad fuer neue Plugins. Die synchronen Methoden bleiben fuer Bukkit Commands, Vault-Kompatibilitaet und einfache Legacy-Integrationen erhalten.

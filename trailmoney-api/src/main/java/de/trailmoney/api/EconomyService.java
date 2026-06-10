@@ -5,6 +5,7 @@ import de.trailmoney.api.account.AccountId;
 import de.trailmoney.api.money.BalanceEntry;
 import de.trailmoney.api.money.Currency;
 import de.trailmoney.api.money.Money;
+import de.trailmoney.api.transaction.Transaction;
 import de.trailmoney.api.transaction.TransactionReason;
 import de.trailmoney.api.transaction.TransactionResult;
 
@@ -47,4 +48,8 @@ public interface EconomyService {
     List<BalanceEntry> topBalances(Currency currency, int limit);
 
     CompletionStage<List<BalanceEntry>> topBalancesAsync(Currency currency, int limit);
+
+    List<Transaction> recentTransactions(AccountId accountId, Currency currency, int limit);
+
+    CompletionStage<List<Transaction>> recentTransactionsAsync(AccountId accountId, Currency currency, int limit);
 }

@@ -124,6 +124,7 @@ Regeln:
 - `/eco set <spieler> <betrag>`
 - `/eco reload`
 - `/eco top`
+- `/eco history <spieler> [limit]`
 - Startgeld
 - Min-Balance
 - Max-Balance
