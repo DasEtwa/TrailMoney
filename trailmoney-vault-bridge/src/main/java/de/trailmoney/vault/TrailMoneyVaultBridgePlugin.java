@@ -19,7 +19,7 @@ public final class TrailMoneyVaultBridgePlugin extends JavaPlugin {
         }
 
         vaultEconomy = new TrailMoneyVaultEconomy(provider.getProvider());
-        getServer().getServicesManager().register(Economy.class, vaultEconomy, this, ServicePriority.Normal);
+        getServer().getServicesManager().register(Economy.class, vaultEconomy, this, ServicePriority.Highest);
         getLogger().info("Registered TrailMoney as a Vault Economy provider.");
     }
 

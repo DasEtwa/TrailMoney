@@ -72,11 +72,20 @@ version: '${version}'
 api-version: '26.1.2'
 depend:
   - TrailMoney
-softdepend:
-  - Vault
-provides:
   - Vault
 ```
+
+MVP-Entscheidung nach Runtime-Test:
+
+- Die Bridge haengt zuerst explizit von echtem `Vault` ab.
+- Sie registriert nur einen `Economy` Provider fuer TrailMoney.
+- Sie deklariert vorerst kein `provides: [Vault]`.
+
+Grund:
+
+- `provides: [Vault]` kann auf Paper 26.1.2 echte `Vault.jar`-Loads und Plugin-Classpath-Aufloesung stoeren, wenn die Bridge die VaultAPI-Klassen nicht selbst enthaelt.
+- Plugins wie Multiverse oder FAWE referenzieren `net.milkbowl.vault.*` Klassen direkt. Wenn Paper ihre Vault-Abhaengigkeit durch `TrailMoneyVaultBridge` als erfuellt betrachtet, aber diese Klassen nicht vorhanden sind, entstehen `NoClassDefFoundError`.
+- Ein echter Vault-Ersatz ohne `Vault.jar` braucht daher ein separates Artefakt oder Packaging-Konzept, das die VaultAPI-Klassen sauber und lizenzkonform bereitstellt.
 
 ## provides: [Vault]
 
@@ -88,6 +97,11 @@ Einschraenkungen:
 - Es garantiert nicht, dass ein Plugin exakt `Vault` als Plugin-Name erwartet.
 - Es garantiert nicht, dass alte Plugins ihre Economy-Abfrage zum richtigen Zeitpunkt machen.
 - Es ersetzt keine lizenzrechtliche Pruefung der VaultAPI.
+
+Aktueller Stand:
+
+- `TrailMoneyVaultBridge` nutzt `provides: [Vault]` nicht.
+- Erst wenn ein separates Vault-Replacement-Artefakt gebaut wird, darf `provides: [Vault]` wieder geprueft werden.
 
 ## loadbefore
 

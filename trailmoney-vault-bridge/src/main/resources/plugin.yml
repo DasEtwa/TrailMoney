@@ -5,9 +5,6 @@ api-version: '26.1.2'
 load: POSTWORLD
 depend:
   - TrailMoney
-softdepend:
-  - Vault
-provides:
   - Vault
 authors:
   - TrailMoney contributors

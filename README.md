@@ -37,7 +37,7 @@ Expected jars:
 - `trailmoney-core/build/libs/TrailMoney-<version>.jar`
 - `trailmoney-vault-bridge/build/libs/TrailMoneyVaultBridge-<version>.jar`
 
-Install the core jar first. Install the Vault bridge jar only when compatibility with Vault Economy plugins is needed.
+Install the core jar first. Install the Vault bridge jar only when compatibility with Vault Economy plugins is needed. The current bridge requires a real Vault jar at runtime and registers TrailMoney as a Vault Economy provider. A full no-Vault replacement jar is a separate packaging/licensing task.
 
 ## Design Boundaries
 
