@@ -1,0 +1,61 @@
+name: TrailMoney
+main: de.trailmoney.core.TrailMoneyPlugin
+version: '${version}'
+api-version: '26.1.2'
+load: POSTWORLD
+authors:
+  - TrailMoney contributors
+description: Paper-first economy plugin with a public API and optional Vault compatibility.
+website: https://github.com/trailmoney/trailmoney
+libraries:
+  - org.xerial:sqlite-jdbc:3.53.2.0
+
+commands:
+  money:
+    description: Shows your or another player's balance.
+    usage: /money [player]
+    permission: trailmoney.balance
+  pay:
+    description: Pays another player.
+    usage: /pay <player> <amount>
+    permission: trailmoney.pay
+  eco:
+    description: Administrative economy command.
+    usage: /eco <give|take|set|reload|top> [args]
+    permission: trailmoney.admin
+
+permissions:
+  trailmoney.balance:
+    description: Allows checking your own balance.
+    default: true
+  trailmoney.balance.others:
+    description: Allows checking another player's balance.
+    default: op
+  trailmoney.pay:
+    description: Allows paying another player.
+    default: true
+  trailmoney.eco.give:
+    description: Allows adding money to an account.
+    default: op
+  trailmoney.eco.take:
+    description: Allows taking money from an account.
+    default: op
+  trailmoney.eco.set:
+    description: Allows setting account balances.
+    default: op
+  trailmoney.eco.reload:
+    description: Allows reloading TrailMoney config.
+    default: op
+  trailmoney.eco.top:
+    description: Allows viewing top balances.
+    default: op
+  trailmoney.admin:
+    description: Grants all TrailMoney admin permissions.
+    default: op
+    children:
+      trailmoney.balance.others: true
+      trailmoney.eco.give: true
+      trailmoney.eco.take: true
+      trailmoney.eco.set: true
+      trailmoney.eco.reload: true
+      trailmoney.eco.top: true

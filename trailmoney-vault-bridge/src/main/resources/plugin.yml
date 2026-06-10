@@ -1,0 +1,14 @@
+name: TrailMoneyVaultBridge
+main: de.trailmoney.vault.TrailMoneyVaultBridgePlugin
+version: '${version}'
+api-version: '26.1.2'
+load: POSTWORLD
+depend:
+  - TrailMoney
+softdepend:
+  - Vault
+provides:
+  - Vault
+authors:
+  - TrailMoney contributors
+description: Optional Vault Economy bridge for TrailMoney.

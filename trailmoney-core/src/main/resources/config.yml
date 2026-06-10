@@ -1,0 +1,33 @@
+storage:
+  type: sqlite
+  sqlite:
+    file: trailmoney.db
+
+currency:
+  default: coins
+  currencies:
+    coins:
+      display-name: Coins
+      symbol: "$"
+      decimals: 2
+
+economy:
+  start-balance: "0.00"
+  min-balance: "0.00"
+  max-balance: "-1"
+  create-account-on-join: true
+  top-limit: 10
+
+luckperms:
+  enabled: true
+  use-meta: true
+  meta:
+    multiplier-key: "trailmoney.multiplier"
+    max-balance-key: "trailmoney.max-balance"
+    start-balance-key: "trailmoney.start-balance"
+  fallback:
+    multiplier: 1.0
+    max-balance: -1
+
+messages:
+  prefix: "[TrailMoney]"
