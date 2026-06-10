@@ -18,7 +18,8 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Build
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
-        with:
-          arguments: build
+
+      - name: Build
+        run: ./gradlew build --no-daemon
