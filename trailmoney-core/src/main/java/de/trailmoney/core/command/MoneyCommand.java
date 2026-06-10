@@ -39,6 +39,10 @@ public final class MoneyCommand implements TabExecutor {
                 return true;
             }
             OfflinePlayer target = CommandSupport.resolveOfflinePlayer(args[0]);
+            if (target == null) {
+                CommandSupport.unknownPlayer(plugin, sender, args[0]);
+                return true;
+            }
             String displayName = CommandSupport.displayName(target, args[0]);
             Account account = plugin.economyService().getOrCreatePlayerAccount(target.getUniqueId(), displayName);
             Money balance = plugin.economyService().getBalance(AccountId.player(target.getUniqueId()), plugin.settings().defaultCurrency());

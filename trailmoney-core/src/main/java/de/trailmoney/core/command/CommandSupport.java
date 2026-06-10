@@ -60,8 +60,16 @@ final class CommandSupport {
             UUID uuid = UUID.fromString(input);
             return Bukkit.getOfflinePlayer(uuid);
         } catch (IllegalArgumentException ignored) {
-            return Bukkit.getOfflinePlayer(input);
+            Player onlinePlayer = Bukkit.getPlayerExact(input);
+            if (onlinePlayer != null) {
+                return onlinePlayer;
+            }
+            return Bukkit.getOfflinePlayerIfCached(input);
         }
+    }
+
+    static void unknownPlayer(TrailMoneyPlugin plugin, CommandSender sender, String input) {
+        error(plugin, sender, "Unknown offline player: " + input + ". Use a cached player name or UUID.");
     }
 
     static String displayName(OfflinePlayer player, String fallback) {

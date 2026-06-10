@@ -83,6 +83,10 @@ public final class EcoCommand implements TabExecutor {
         }
 
         OfflinePlayer target = CommandSupport.resolveOfflinePlayer(args[1]);
+        if (target == null) {
+            CommandSupport.unknownPlayer(plugin, sender, args[1]);
+            return true;
+        }
         Account account = plugin.economyService().getOrCreatePlayerAccount(target.getUniqueId(), CommandSupport.displayName(target, args[1]));
 
         TransactionResult result = switch (mutationType) {

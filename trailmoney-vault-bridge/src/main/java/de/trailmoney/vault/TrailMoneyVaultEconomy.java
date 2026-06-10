@@ -68,7 +68,8 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public boolean hasAccount(String playerName) {
-        return hasAccount(resolveOfflinePlayer(playerName));
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        return player != null && hasAccount(player);
     }
 
     @Override
@@ -88,7 +89,8 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public double getBalance(String playerName) {
-        return getBalance(resolveOfflinePlayer(playerName));
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        return player == null ? 0 : getBalance(player);
     }
 
     @Override
@@ -109,7 +111,8 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public boolean has(String playerName, double amount) {
-        return has(resolveOfflinePlayer(playerName), amount);
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        return player != null && has(player, amount);
     }
 
     @Override
@@ -135,7 +138,11 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public EconomyResponse withdrawPlayer(String playerName, double amount) {
-        return withdrawPlayer(resolveOfflinePlayer(playerName), amount);
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        if (player == null) {
+            return failure(amount, 0, "Unknown offline player: " + playerName);
+        }
+        return withdrawPlayer(player, amount);
     }
 
     @Override
@@ -162,7 +169,11 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public EconomyResponse depositPlayer(String playerName, double amount) {
-        return depositPlayer(resolveOfflinePlayer(playerName), amount);
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        if (player == null) {
+            return failure(amount, 0, "Unknown offline player: " + playerName);
+        }
+        return depositPlayer(player, amount);
     }
 
     @Override
@@ -249,7 +260,11 @@ public final class TrailMoneyVaultEconomy implements Economy {
 
     @Override
     public boolean createPlayerAccount(String playerName) {
-        getOrCreate(resolveOfflinePlayer(playerName));
+        OfflinePlayer player = resolveOfflinePlayer(playerName);
+        if (player == null) {
+            return false;
+        }
+        getOrCreate(player);
         return true;
     }
 
@@ -315,12 +330,15 @@ public final class TrailMoneyVaultEconomy implements Economy {
         return BigDecimal.valueOf(money.minorUnits(), money.currency().decimals()).doubleValue();
     }
 
-    @SuppressWarnings("deprecation")
     private OfflinePlayer resolveOfflinePlayer(String input) {
         try {
             return Bukkit.getOfflinePlayer(UUID.fromString(input));
         } catch (IllegalArgumentException ignored) {
-            return Bukkit.getOfflinePlayer(input);
+            OfflinePlayer onlinePlayer = Bukkit.getPlayerExact(input);
+            if (onlinePlayer != null) {
+                return onlinePlayer;
+            }
+            return Bukkit.getOfflinePlayerIfCached(input);
         }
     }
 }

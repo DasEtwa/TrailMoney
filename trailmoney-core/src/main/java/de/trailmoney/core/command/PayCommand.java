@@ -35,6 +35,10 @@ public final class PayCommand implements TabExecutor {
         }
 
         OfflinePlayer target = CommandSupport.resolveOfflinePlayer(args[0]);
+        if (target == null) {
+            CommandSupport.unknownPlayer(plugin, sender, args[0]);
+            return true;
+        }
         if (target.getUniqueId().equals(player.getUniqueId())) {
             CommandSupport.error(plugin, sender, "You cannot pay yourself.");
             return true;
