@@ -18,4 +18,10 @@ public record TransactionReason(String key, String message, String actor) {
     public static TransactionReason player(String key, String playerName) {
         return new TransactionReason(key, null, playerName);
     }
+
+    public static TransactionReason plugin(String pluginName, String key) {
+        Objects.requireNonNull(pluginName, "pluginName");
+        String actor = "plugin:" + pluginName.trim();
+        return new TransactionReason(key, null, actor);
+    }
 }

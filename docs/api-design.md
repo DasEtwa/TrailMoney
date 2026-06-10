@@ -1,6 +1,6 @@
 # TrailMoney API Design
 
-Dieses Dokument beschreibt die geplante oeffentliche API. Es ist noch keine Implementierung.
+Dieses Dokument beschreibt die oeffentliche TrailMoney API und die Leitplanken fuer spaetere Erweiterungen.
 
 ## Ziele
 
@@ -21,7 +21,7 @@ Dieses Dokument beschreibt die geplante oeffentliche API. Es ist noch keine Impl
 
 ## EconomyService
 
-Geplante Verantwortungen:
+Aktuelle Verantwortungen:
 
 - Account suchen oder erstellen
 - Balance lesen
@@ -31,18 +31,21 @@ Geplante Verantwortungen:
 - Limits pruefen
 - Transaktionen erzeugen
 
-Moegliche Methoden als Konzept:
+Aktuelle Methoden:
 
 ```java
-CompletionStage<AccountLookupResult> findAccount(AccountId id);
-CompletionStage<Account> getOrCreateAccount(AccountId id);
-CompletionStage<Money> getBalance(AccountId id, CurrencyKey currency);
-CompletionStage<TransactionResult> deposit(AccountId target, Money amount, TransactionReason reason);
-CompletionStage<TransactionResult> withdraw(AccountId source, Money amount, TransactionReason reason);
-CompletionStage<TransactionResult> transfer(AccountId source, AccountId target, Money amount, TransactionReason reason);
+Currency defaultCurrency();
+Account getOrCreatePlayerAccount(UUID playerUuid, String playerName);
+Optional<Account> findAccount(AccountId accountId);
+Money getBalance(AccountId accountId, Currency currency);
+TransactionResult deposit(AccountId target, Money amount, TransactionReason reason);
+TransactionResult withdraw(AccountId source, Money amount, TransactionReason reason);
+TransactionResult transfer(AccountId source, AccountId target, Money amount, TransactionReason reason);
+TransactionResult setBalance(AccountId accountId, Money amount, TransactionReason reason);
+List<BalanceEntry> topBalances(Currency currency, int limit);
 ```
 
-Ob die API synchron, async oder gemischt wird, bleibt offen. Fuer Storage-Operationen spricht vieles fuer async intern, aber Minecraft Commands und Events brauchen klare Main-Thread-Regeln.
+Die MVP-API ist synchron, passend zu Bukkit Commands, Events und ServicesManager. Eine spaetere async API darf ergaenzt werden, sollte die synchrone API aber nicht still brechen.
 
 ## Account
 
@@ -171,6 +174,59 @@ server.getServicesManager().register(
 ```
 
 Andere Plugins sollen TrailMoney ueber diese API oder eine kleine API-Dependency nutzen, nicht ueber interne Core-Klassen.
+
+## Nutzung in anderen Plugins
+
+Andere Plugins sollen gegen `trailmoney-api` kompilieren und zur Laufzeit den Service aus dem Bukkit `ServicesManager` lesen.
+
+Gradle-Beispiel:
+
+```kotlin
+dependencies {
+    compileOnly("de.trailmoney:trailmoney-api:<version>")
+}
+```
+
+`plugin.yml` Beispiel:
+
+```yaml
+softdepend:
+  - TrailMoney
+```
+
+Java-Beispiel:
+
+```java
+RegisteredServiceProvider<EconomyService> registration =
+    Bukkit.getServicesManager().getRegistration(EconomyService.class);
+
+if (registration == null) {
+    // TrailMoney ist nicht installiert oder noch nicht registriert.
+    return;
+}
+
+EconomyService economy = registration.getProvider();
+Currency currency = economy.defaultCurrency();
+Account account = economy.getOrCreatePlayerAccount(player.getUniqueId(), player.getName());
+
+TransactionResult result = economy.deposit(
+    account.id(),
+    Money.ofMinor(250, currency),
+    TransactionReason.plugin("my-plugin", "quest_reward")
+);
+
+if (!result.successful()) {
+    plugin.getLogger().warning("TrailMoney deposit failed: " + result.code());
+}
+```
+
+Regeln fuer Integrationen:
+
+- Keine Core-Klassen wie `de.trailmoney.core.*` verwenden.
+- Kein Geld als `double` an TrailMoney vorbei rechnen.
+- Fuer Spieler immer UUIDs nutzen.
+- Fehler immer ueber `TransactionResult#code()` behandeln, nicht nur ueber Nachrichten.
+- Vault nur nutzen, wenn ein altes Plugin nicht direkt gegen `trailmoney-api` integriert werden kann.
 
 ## Nicht-Ziele der API
 

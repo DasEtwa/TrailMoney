@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,7 +50,9 @@ class SqliteEconomyStorageTest {
 
     @Test
     void depositWithdrawAndSetBalanceRespectLimits() {
-        try (SqliteEconomyStorage storage = open(tempDir.resolve("trailmoney.db"))) {
+        Path database = tempDir.resolve("trailmoney.db");
+
+        try (SqliteEconomyStorage storage = open(database)) {
             Account account = createPlayer(storage, "Tester", ZERO);
 
             StorageMutationResult deposit = storage.deposit(
@@ -72,6 +76,7 @@ class SqliteEconomyStorageTest {
 
             assertEquals(TransactionResultCode.LIMIT_EXCEEDED, rejectedDeposit.code());
             assertEquals(5000, storage.getBalance(account.id(), COINS).minorUnits());
+            assertEquals(1, countTransactions(database, "test_deposit_limit", "FAILED"));
 
             StorageMutationResult withdraw = storage.withdraw(
                 account.id(),
@@ -103,6 +108,39 @@ class SqliteEconomyStorageTest {
 
             assertEquals(TransactionResultCode.SUCCESS, set.code());
             assertEquals(9999, storage.getBalance(account.id(), COINS).minorUnits());
+        }
+    }
+
+    @Test
+    void setBalanceRejectsValuesOutsideConfiguredLimitsWithoutChangingBalance() {
+        Path database = tempDir.resolve("trailmoney.db");
+
+        try (SqliteEconomyStorage storage = open(database)) {
+            Account account = createPlayer(storage, "Bounded", Money.ofMinor(5000, COINS));
+
+            StorageMutationResult belowMin = storage.setBalance(
+                account.id(),
+                Money.ofMinor(999, COINS),
+                Money.ofMinor(1000, COINS),
+                10_000L,
+                transaction(null, account.id(), 999, "test_set_below_min")
+            );
+
+            assertEquals(TransactionResultCode.LIMIT_EXCEEDED, belowMin.code());
+            assertEquals(5000, storage.getBalance(account.id(), COINS).minorUnits());
+            assertEquals(1, countTransactions(database, "test_set_below_min", "FAILED"));
+
+            StorageMutationResult aboveMax = storage.setBalance(
+                account.id(),
+                Money.ofMinor(10_001, COINS),
+                Money.ofMinor(1000, COINS),
+                10_000L,
+                transaction(null, account.id(), 10_001, "test_set_above_max")
+            );
+
+            assertEquals(TransactionResultCode.LIMIT_EXCEEDED, aboveMax.code());
+            assertEquals(5000, storage.getBalance(account.id(), COINS).minorUnits());
+            assertEquals(1, countTransactions(database, "test_set_above_max", "FAILED"));
         }
     }
 
@@ -182,5 +220,18 @@ class SqliteEconomyStorageTest {
 
     private Transaction transaction(AccountId source, AccountId target, long amount, String reason) {
         return Transaction.pending(source, target, Money.ofMinor(amount, COINS), TransactionReason.system(reason));
+    }
+
+    private long countTransactions(Path database, String reason, String status) {
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+             var statement = connection.prepareStatement("SELECT COUNT(*) FROM transactions WHERE reason = ? AND status = ?")) {
+            statement.setString(1, reason);
+            statement.setString(2, status);
+            try (var resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getLong(1) : 0L;
+            }
+        } catch (SQLException exception) {
+            throw new AssertionError("Could not read transaction log", exception);
+        }
     }
 }
