@@ -67,6 +67,11 @@ MVP-Hinweis:
 - Core Economy-Transfers sollten nicht automatisch multipliziert werden.
 - Multiplikatoren sind eher fuer Reward-Quellen sinnvoll, nicht fuer `/pay`.
 
+Aktueller Implementierungsstand:
+
+- `trailmoney.multiplier` wird vom Hook lesbar gemacht, aber im Core noch nicht automatisch auf Transfers angewendet.
+- Damit vermeidet TrailMoney unerwartete Multiplikation bei `/pay`, Admin-Operationen oder Vault-Bridge-Aufrufen.
+
 ### Max Balance
 
 Kann Max-Balance pro Spieler erhoehen oder begrenzen.
@@ -74,6 +79,12 @@ Kann Max-Balance pro Spieler erhoehen oder begrenzen.
 Regel:
 
 - Meta-Wert ueberschreibt oder ergaenzt die Config nur nach klar dokumentierter Prioritaet.
+
+Aktueller Implementierungsstand:
+
+- Wenn LuckPerms installiert ist und Userdaten geladen oder nachladbar sind, ueberschreibt `trailmoney.max-balance` das globale `economy.max-balance`.
+- Wenn kein Meta-Wert vorhanden ist, nutzt TrailMoney `luckperms.fallback.max-balance`, falls gesetzt.
+- Wenn auch dieser Wert `-1` ist, nutzt TrailMoney `economy.max-balance`.
 
 ### Start Balance
 
@@ -83,6 +94,10 @@ Regel:
 
 - Wird beim Account-Erstellen ausgewertet.
 - Spaetere Meta-Aenderungen aendern bestehende Balances nicht automatisch.
+
+Aktueller Implementierungsstand:
+
+- Wenn LuckPerms installiert ist und Userdaten geladen oder nachladbar sind, ueberschreibt `trailmoney.start-balance` das globale `economy.start-balance` bei der Account-Erstellung.
 
 ## Technische Risiken
 

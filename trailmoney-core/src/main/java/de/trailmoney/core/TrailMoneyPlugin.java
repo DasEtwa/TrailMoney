@@ -5,6 +5,7 @@ import de.trailmoney.core.command.EcoCommand;
 import de.trailmoney.core.command.MoneyCommand;
 import de.trailmoney.core.command.PayCommand;
 import de.trailmoney.core.config.TrailMoneySettings;
+import de.trailmoney.core.hook.LuckPermsHook;
 import de.trailmoney.core.listener.PlayerAccountListener;
 import de.trailmoney.core.service.TrailEconomyService;
 import de.trailmoney.core.storage.EconomyStorage;
@@ -18,6 +19,7 @@ public final class TrailMoneyPlugin extends JavaPlugin {
     private TrailEconomyService economyService;
     private PlayerAccountListener accountListener;
     private TrailMoneySettings settings;
+    private LuckPermsHook luckPermsHook;
 
     @Override
     public void onEnable() {
@@ -28,6 +30,7 @@ public final class TrailMoneyPlugin extends JavaPlugin {
         storage.initialize();
 
         economyService = new TrailEconomyService(this, storage, settings);
+        setupLuckPermsHook();
         getServer().getServicesManager().register(EconomyService.class, economyService, this, ServicePriority.Normal);
 
         accountListener = new PlayerAccountListener(economyService, settings);
@@ -57,7 +60,23 @@ public final class TrailMoneyPlugin extends JavaPlugin {
         reloadConfig();
         settings = TrailMoneySettings.load(this);
         economyService.updateSettings(settings);
+        if (luckPermsHook != null) {
+            luckPermsHook.updateSettings(settings);
+        }
         accountListener.updateSettings(settings);
+    }
+
+    private void setupLuckPermsHook() {
+        if (!settings.luckPerms().enabled() || getServer().getPluginManager().getPlugin("LuckPerms") == null) {
+            return;
+        }
+        try {
+            luckPermsHook = new LuckPermsHook(this, settings);
+            economyService.updateLuckPermsHook(luckPermsHook);
+            getLogger().info("LuckPerms meta support enabled.");
+        } catch (RuntimeException exception) {
+            getLogger().warning("LuckPerms is installed, but TrailMoney could not hook into it: " + exception.getMessage());
+        }
     }
 
     private void registerCommands() {

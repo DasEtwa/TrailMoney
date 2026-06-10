@@ -14,6 +14,7 @@ public record TrailMoneySettings(
     Money startBalance,
     Money minBalance,
     Long maxBalanceMinorUnits,
+    LuckPermsSettings luckPerms,
     Path sqliteFile,
     boolean createAccountOnJoin,
     int topLimit,
@@ -23,6 +24,7 @@ public record TrailMoneySettings(
         Objects.requireNonNull(defaultCurrency, "defaultCurrency");
         Objects.requireNonNull(startBalance, "startBalance");
         Objects.requireNonNull(minBalance, "minBalance");
+        Objects.requireNonNull(luckPerms, "luckPerms");
         Objects.requireNonNull(sqliteFile, "sqliteFile");
         Objects.requireNonNull(messagePrefix, "messagePrefix");
         if (topLimit < 1) {
@@ -57,10 +59,42 @@ public record TrailMoneySettings(
             startBalance,
             minBalance,
             maxBalance,
+            LuckPermsSettings.load(plugin, currency),
             plugin.getDataFolder().toPath().resolve(sqliteFile),
             plugin.getConfig().getBoolean("economy.create-account-on-join", true),
             plugin.getConfig().getInt("economy.top-limit", 10),
             plugin.getConfig().getString("messages.prefix", "[TrailMoney]")
         );
+    }
+
+    public record LuckPermsSettings(
+        boolean enabled,
+        boolean useMeta,
+        String multiplierKey,
+        String maxBalanceKey,
+        String startBalanceKey,
+        double fallbackMultiplier,
+        Long fallbackMaxBalanceMinorUnits
+    ) {
+        public LuckPermsSettings {
+            Objects.requireNonNull(multiplierKey, "multiplierKey");
+            Objects.requireNonNull(maxBalanceKey, "maxBalanceKey");
+            Objects.requireNonNull(startBalanceKey, "startBalanceKey");
+        }
+
+        private static LuckPermsSettings load(JavaPlugin plugin, Currency currency) {
+            String fallbackMaxRaw = plugin.getConfig().getString("luckperms.fallback.max-balance", "-1");
+            Long fallbackMax = "-1".equals(fallbackMaxRaw) ? null : MoneyParser.parse(fallbackMaxRaw, currency).minorUnits();
+
+            return new LuckPermsSettings(
+                plugin.getConfig().getBoolean("luckperms.enabled", true),
+                plugin.getConfig().getBoolean("luckperms.use-meta", true),
+                plugin.getConfig().getString("luckperms.meta.multiplier-key", "trailmoney.multiplier"),
+                plugin.getConfig().getString("luckperms.meta.max-balance-key", "trailmoney.max-balance"),
+                plugin.getConfig().getString("luckperms.meta.start-balance-key", "trailmoney.start-balance"),
+                plugin.getConfig().getDouble("luckperms.fallback.multiplier", 1.0D),
+                fallbackMax
+            );
+        }
     }
 }

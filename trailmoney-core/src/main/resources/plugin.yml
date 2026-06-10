@@ -3,6 +3,8 @@ main: de.trailmoney.core.TrailMoneyPlugin
 version: '${version}'
 api-version: '26.1.2'
 load: POSTWORLD
+softdepend:
+  - LuckPerms
 authors:
   - TrailMoney contributors
 description: Paper-first economy plugin with a public API and optional Vault compatibility.

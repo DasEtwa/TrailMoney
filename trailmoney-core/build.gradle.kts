@@ -5,6 +5,7 @@ plugins {
 dependencies {
     api(project(":trailmoney-api"))
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+    compileOnly("net.luckperms:api:5.5")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

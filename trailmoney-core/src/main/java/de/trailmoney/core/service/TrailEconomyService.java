@@ -16,6 +16,7 @@ import de.trailmoney.api.transaction.TransactionResult;
 import de.trailmoney.api.transaction.TransactionResultCode;
 import de.trailmoney.api.transaction.TransactionStatus;
 import de.trailmoney.core.config.TrailMoneySettings;
+import de.trailmoney.core.hook.LuckPermsHook;
 import de.trailmoney.core.storage.AccountCreationResult;
 import de.trailmoney.core.storage.EconomyStorage;
 import de.trailmoney.core.storage.StorageException;
@@ -33,6 +34,7 @@ public final class TrailEconomyService implements EconomyService {
     private final Plugin plugin;
     private final EconomyStorage storage;
     private TrailMoneySettings settings;
+    private LuckPermsHook luckPermsHook;
 
     public TrailEconomyService(Plugin plugin, EconomyStorage storage, TrailMoneySettings settings) {
         this.plugin = plugin;
@@ -44,6 +46,10 @@ public final class TrailEconomyService implements EconomyService {
         this.settings = settings;
     }
 
+    public void updateLuckPermsHook(LuckPermsHook luckPermsHook) {
+        this.luckPermsHook = luckPermsHook;
+    }
+
     @Override
     public Currency defaultCurrency() {
         return settings.defaultCurrency();
@@ -51,7 +57,7 @@ public final class TrailEconomyService implements EconomyService {
 
     @Override
     public Account getOrCreatePlayerAccount(UUID playerUuid, String playerName) {
-        AccountCreationResult result = storage.getOrCreatePlayerAccount(playerUuid, playerName, settings.startBalance());
+        AccountCreationResult result = storage.getOrCreatePlayerAccount(playerUuid, playerName, startBalance(playerUuid));
         if (result.created()) {
             Bukkit.getPluginManager().callEvent(new AccountCreateEvent(result.account()));
         }
@@ -71,7 +77,7 @@ public final class TrailEconomyService implements EconomyService {
     @Override
     public TransactionResult deposit(AccountId target, Money amount, TransactionReason reason) {
         Transaction transaction = Transaction.pending(null, target, amount, reason);
-        return executeMoneyMutation(transaction, amount, () -> storage.deposit(target, amount, settings.minBalance(), settings.maxBalanceMinorUnits(), transaction));
+        return executeMoneyMutation(transaction, amount, () -> storage.deposit(target, amount, settings.minBalance(), maxBalance(target), transaction));
     }
 
     @Override
@@ -86,13 +92,13 @@ public final class TrailEconomyService implements EconomyService {
             return TransactionResult.failure(TransactionResultCode.INVALID_AMOUNT, null, "Source and target accounts are the same");
         }
         Transaction transaction = Transaction.pending(source, target, amount, reason);
-        return executeMoneyMutation(transaction, amount, () -> storage.transfer(source, target, amount, settings.minBalance(), settings.maxBalanceMinorUnits(), transaction));
+        return executeMoneyMutation(transaction, amount, () -> storage.transfer(source, target, amount, settings.minBalance(), maxBalance(target), transaction));
     }
 
     @Override
     public TransactionResult setBalance(AccountId accountId, Money amount, TransactionReason reason) {
         Transaction transaction = Transaction.pending(null, accountId, amount, reason);
-        return executeMutation(transaction, () -> storage.setBalance(accountId, amount, settings.minBalance(), settings.maxBalanceMinorUnits(), transaction));
+        return executeMutation(transaction, () -> storage.setBalance(accountId, amount, settings.minBalance(), maxBalance(accountId), transaction));
     }
 
     @Override
@@ -105,6 +111,37 @@ public final class TrailEconomyService implements EconomyService {
             return TransactionResult.failure(TransactionResultCode.INVALID_AMOUNT, transaction.withStatus(TransactionStatus.FAILED), "Amount must be positive");
         }
         return executeMutation(transaction, operation);
+    }
+
+    private Money startBalance(UUID playerUuid) {
+        if (luckPermsHook == null) {
+            return settings.startBalance();
+        }
+        return luckPermsHook.startBalance(playerUuid);
+    }
+
+    private Long maxBalance(AccountId accountId) {
+        UUID playerUuid = playerUuid(accountId);
+        if (luckPermsHook == null || playerUuid == null) {
+            return settings.maxBalanceMinorUnits();
+        }
+        return luckPermsHook.maxBalanceMinorUnits(playerUuid);
+    }
+
+    private UUID playerUuid(AccountId accountId) {
+        if (accountId == null || accountId.type() != de.trailmoney.api.account.AccountType.PLAYER) {
+            return null;
+        }
+        String value = accountId.value();
+        String prefix = "player:";
+        if (!value.startsWith(prefix)) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.substring(prefix.length()));
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     private TransactionResult executeMutation(Transaction transaction, Supplier<StorageMutationResult> operation) {
