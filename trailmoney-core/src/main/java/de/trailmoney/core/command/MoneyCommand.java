@@ -28,6 +28,9 @@ public final class MoneyCommand implements TabExecutor {
                 CommandSupport.error(plugin, sender, "Usage: /money <player>");
                 return true;
             }
+            if (!CommandSupport.requirePermission(plugin, sender, "trailmoney.balance")) {
+                return true;
+            }
             Account account = plugin.economyService().getOrCreatePlayerAccount(player.getUniqueId(), player.getName());
             Money balance = plugin.economyService().getBalance(account.id(), plugin.settings().defaultCurrency());
             CommandSupport.info(plugin, sender, "Your balance: " + CommandSupport.format(balance));
@@ -56,7 +59,7 @@ public final class MoneyCommand implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (args.length == 1 && sender.hasPermission("trailmoney.balance.others")) {
+        if (args.length == 1 && CommandSupport.hasPermission(sender, "trailmoney.balance.others")) {
             return CommandSupport.onlinePlayerSuggestions(args[0]);
         }
         return List.of();

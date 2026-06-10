@@ -75,7 +75,7 @@ public final class TrailEconomyService implements EconomyService {
     public Account getOrCreatePlayerAccount(UUID playerUuid, String playerName) {
         AccountCreationResult result = storage.getOrCreatePlayerAccount(playerUuid, playerName, startBalance(playerUuid));
         if (result.created()) {
-            Bukkit.getPluginManager().callEvent(new AccountCreateEvent(result.account()));
+            callEventSync(new AccountCreateEvent(result.account()));
         }
         return result.account();
     }
@@ -230,7 +230,7 @@ public final class TrailEconomyService implements EconomyService {
         }
 
         TransactionPreEvent preEvent = new TransactionPreEvent(transaction);
-        Bukkit.getPluginManager().callEvent(preEvent);
+        callEventSync(preEvent);
         if (preEvent.isCancelled()) {
             Transaction cancelled = transaction.withStatus(TransactionStatus.CANCELLED);
             TransactionResult result = TransactionResult.failure(
@@ -238,7 +238,7 @@ public final class TrailEconomyService implements EconomyService {
                 cancelled,
                 preEvent.cancellationReason() == null ? "Transaction cancelled by event" : preEvent.cancellationReason()
             );
-            Bukkit.getPluginManager().callEvent(new TransactionPostEvent(result));
+            callEventSync(new TransactionPostEvent(result));
             return result;
         }
 
@@ -250,7 +250,7 @@ public final class TrailEconomyService implements EconomyService {
 
             if (result.successful()) {
                 for (var change : mutation.changes()) {
-                    Bukkit.getPluginManager().callEvent(new BalanceChangeEvent(
+                    callEventSync(new BalanceChangeEvent(
                         change.accountId(),
                         change.oldBalance(),
                         change.newBalance(),
@@ -258,13 +258,13 @@ public final class TrailEconomyService implements EconomyService {
                     ));
                 }
             }
-            Bukkit.getPluginManager().callEvent(new TransactionPostEvent(result));
+            callEventSync(new TransactionPostEvent(result));
             return result;
         } catch (StorageException exception) {
             plugin.getLogger().log(Level.SEVERE, "Economy storage operation failed", exception);
             Transaction failed = transaction.withStatus(TransactionStatus.FAILED);
             TransactionResult result = TransactionResult.failure(TransactionResultCode.STORAGE_ERROR, failed, exception.getMessage());
-            Bukkit.getPluginManager().callEvent(new TransactionPostEvent(result));
+            callEventSync(new TransactionPostEvent(result));
             return result;
         }
     }

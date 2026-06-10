@@ -24,7 +24,6 @@ commands:
   eco:
     description: Administrative economy command.
     usage: /eco <give|take|set|reload|top> [args]
-    permission: trailmoney.admin
 
 permissions:
   trailmoney.balance:
@@ -55,7 +54,9 @@ permissions:
     description: Grants all TrailMoney admin permissions.
     default: op
     children:
+      trailmoney.balance: true
       trailmoney.balance.others: true
+      trailmoney.pay: true
       trailmoney.eco.give: true
       trailmoney.eco.take: true
       trailmoney.eco.set: true

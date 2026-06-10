@@ -39,11 +39,15 @@ final class CommandSupport {
     }
 
     static boolean requirePermission(TrailMoneyPlugin plugin, CommandSender sender, String permission) {
-        if (sender.hasPermission(permission) || sender.hasPermission("trailmoney.admin")) {
+        if (hasPermission(sender, permission)) {
             return true;
         }
         error(plugin, sender, "You do not have permission: " + permission);
         return false;
+    }
+
+    static boolean hasPermission(CommandSender sender, String permission) {
+        return sender.hasPermission(permission) || sender.hasPermission("trailmoney.admin");
     }
 
     static Money parseAmount(TrailMoneyPlugin plugin, String raw) {

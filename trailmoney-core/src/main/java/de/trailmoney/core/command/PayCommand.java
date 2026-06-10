@@ -28,6 +28,9 @@ public final class PayCommand implements TabExecutor {
             CommandSupport.error(plugin, sender, "Only players can use /pay.");
             return true;
         }
+        if (!CommandSupport.requirePermission(plugin, sender, "trailmoney.pay")) {
+            return true;
+        }
 
         if (args.length != 2) {
             CommandSupport.error(plugin, sender, "Usage: /pay <player> <amount>");
@@ -79,6 +82,9 @@ public final class PayCommand implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
+        if (!CommandSupport.hasPermission(sender, "trailmoney.pay")) {
+            return List.of();
+        }
         if (args.length == 1) {
             return CommandSupport.onlinePlayerSuggestions(args[0]);
         }
