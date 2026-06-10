@@ -11,23 +11,40 @@ import de.trailmoney.api.transaction.TransactionResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 public interface EconomyService {
     Currency defaultCurrency();
 
     Account getOrCreatePlayerAccount(UUID playerUuid, String playerName);
 
+    CompletionStage<Account> getOrCreatePlayerAccountAsync(UUID playerUuid, String playerName);
+
     Optional<Account> findAccount(AccountId accountId);
+
+    CompletionStage<Optional<Account>> findAccountAsync(AccountId accountId);
 
     Money getBalance(AccountId accountId, Currency currency);
 
+    CompletionStage<Money> getBalanceAsync(AccountId accountId, Currency currency);
+
     TransactionResult deposit(AccountId target, Money amount, TransactionReason reason);
+
+    CompletionStage<TransactionResult> depositAsync(AccountId target, Money amount, TransactionReason reason);
 
     TransactionResult withdraw(AccountId source, Money amount, TransactionReason reason);
 
+    CompletionStage<TransactionResult> withdrawAsync(AccountId source, Money amount, TransactionReason reason);
+
     TransactionResult transfer(AccountId source, AccountId target, Money amount, TransactionReason reason);
+
+    CompletionStage<TransactionResult> transferAsync(AccountId source, AccountId target, Money amount, TransactionReason reason);
 
     TransactionResult setBalance(AccountId accountId, Money amount, TransactionReason reason);
 
+    CompletionStage<TransactionResult> setBalanceAsync(AccountId accountId, Money amount, TransactionReason reason);
+
     List<BalanceEntry> topBalances(Currency currency, int limit);
+
+    CompletionStage<List<BalanceEntry>> topBalancesAsync(Currency currency, int limit);
 }

@@ -42,7 +42,10 @@ public final class TrailMoneyPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        getServer().getServicesManager().unregister(EconomyService.class, economyService);
+        if (economyService != null) {
+            getServer().getServicesManager().unregister(EconomyService.class, economyService);
+            economyService.shutdown();
+        }
         if (storage != null) {
             storage.close();
         }

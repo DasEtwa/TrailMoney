@@ -35,17 +35,40 @@ Aktuelle Methoden:
 
 ```java
 Currency defaultCurrency();
+
 Account getOrCreatePlayerAccount(UUID playerUuid, String playerName);
+CompletionStage<Account> getOrCreatePlayerAccountAsync(UUID playerUuid, String playerName);
+
 Optional<Account> findAccount(AccountId accountId);
+CompletionStage<Optional<Account>> findAccountAsync(AccountId accountId);
+
 Money getBalance(AccountId accountId, Currency currency);
+CompletionStage<Money> getBalanceAsync(AccountId accountId, Currency currency);
+
 TransactionResult deposit(AccountId target, Money amount, TransactionReason reason);
+CompletionStage<TransactionResult> depositAsync(AccountId target, Money amount, TransactionReason reason);
+
 TransactionResult withdraw(AccountId source, Money amount, TransactionReason reason);
+CompletionStage<TransactionResult> withdrawAsync(AccountId source, Money amount, TransactionReason reason);
+
 TransactionResult transfer(AccountId source, AccountId target, Money amount, TransactionReason reason);
+CompletionStage<TransactionResult> transferAsync(AccountId source, AccountId target, Money amount, TransactionReason reason);
+
 TransactionResult setBalance(AccountId accountId, Money amount, TransactionReason reason);
+CompletionStage<TransactionResult> setBalanceAsync(AccountId accountId, Money amount, TransactionReason reason);
+
 List<BalanceEntry> topBalances(Currency currency, int limit);
+CompletionStage<List<BalanceEntry>> topBalancesAsync(Currency currency, int limit);
 ```
 
-Die MVP-API ist synchron, passend zu Bukkit Commands, Events und ServicesManager. Eine spaetere async API darf ergaenzt werden, sollte die synchrone API aber nicht still brechen.
+Async ist der bevorzugte Integrationspfad fuer neue Plugins. Die synchronen Methoden bleiben fuer Bukkit Commands, Vault-Kompatibilitaet und einfache Legacy-Integrationen erhalten.
+
+Core-Regel:
+
+- Storage-Arbeit laeuft bei async Methoden auf einem TrailMoney-Worker.
+- Bukkit/Paper Events werden trotzdem auf dem Server-Thread gefeuert.
+- Consumer duerfen `CompletionStage#join()` nicht auf dem Server-Thread fuer normale Gameplay-Flows verwenden.
+- Wenn ein Ergebnis wieder Bukkit-API beruehren muss, muss der Consumer zurueck auf den Server-Thread schedulen.
 
 ## Account
 
@@ -209,15 +232,15 @@ EconomyService economy = registration.getProvider();
 Currency currency = economy.defaultCurrency();
 Account account = economy.getOrCreatePlayerAccount(player.getUniqueId(), player.getName());
 
-TransactionResult result = economy.deposit(
+economy.depositAsync(
     account.id(),
     Money.ofMinor(250, currency),
-    TransactionReason.plugin("my-plugin", "quest_reward")
-);
-
-if (!result.successful()) {
-    plugin.getLogger().warning("TrailMoney deposit failed: " + result.code());
-}
+    TransactionReason.plugin(plugin.getName(), "quest_reward")
+).thenAccept(result -> {
+    if (!result.successful()) {
+        plugin.getLogger().warning("TrailMoney deposit failed: " + result.code());
+    }
+});
 ```
 
 Regeln fuer Integrationen:
@@ -226,6 +249,7 @@ Regeln fuer Integrationen:
 - Kein Geld als `double` an TrailMoney vorbei rechnen.
 - Fuer Spieler immer UUIDs nutzen.
 - Fehler immer ueber `TransactionResult#code()` behandeln, nicht nur ueber Nachrichten.
+- Neue Integrationen sollen async Methoden bevorzugen.
 - Vault nur nutzen, wenn ein altes Plugin nicht direkt gegen `trailmoney-api` integriert werden kann.
 
 ## Nicht-Ziele der API
